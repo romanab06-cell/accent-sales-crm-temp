@@ -130,9 +130,9 @@ export default function BrandsPage() {
   const activeFilterCount = Object.values(filters).filter(v => v !== '').length;
 
   // Get unique values for dropdown filters
-  const uniqueCountries = [...new Set(brands.map(b => b.country_of_origin).filter(Boolean))].sort();
-  const uniqueSectors = [...new Set(brands.flatMap(b => b.project_sectors || []))].sort();
-  const uniqueCategories = [...new Set(brands.flatMap(b => b.design_categories || []))].sort();
+  const uniqueCountries = Array.from(new Set(brands.map(b => b.country_of_origin).filter(Boolean))).sort();
+  const uniqueSectors = Array.from(new Set(brands.flatMap(b => b.project_sectors || []))).sort();
+  const uniqueCategories = Array.from(new Set(brands.flatMap(b => b.design_categories || []))).sort();
 
   return (
     <div className="min-h-screen bg-gray-50">
