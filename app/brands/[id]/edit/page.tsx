@@ -20,7 +20,7 @@ export default function EditBrandPage({ params }: { params: { id: string } }) {
     country_of_origin: string;
     status: 'prospect' | 'negotiation' | 'contract' | 'active' | 'inactive' | 'not_relevant';
     deal_stage: 'lead' | 'qualified' | 'proposal' | 'negotiation' | 'won' | 'lost';
-    priority: number | undefined;
+    priority: 1 | 2 | 3 | undefined;
     comments: string;
     project_sectors: string[];
     design_categories: string[];
