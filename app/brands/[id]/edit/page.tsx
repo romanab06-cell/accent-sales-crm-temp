@@ -89,7 +89,7 @@ export default function EditBrandPage({ params }: { params: { id: string } }) {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: name === 'priority' ? (value === '' ? undefined : parseInt(value) as 1 | 2 | 3) : value
     }));
   };
 
@@ -131,7 +131,7 @@ export default function EditBrandPage({ params }: { params: { id: string } }) {
         country_of_origin: formData.country_of_origin || undefined,
         status: formData.status,
         deal_stage: formData.deal_stage,
-        priority: formData.priority || undefined,
+        priority: formData.priority as 1 | 2 | 3 | undefined,
         comments: formData.comments || undefined,
         project_sectors: formData.project_sectors.length > 0 ? formData.project_sectors : undefined,
         design_categories: formData.design_categories.length > 0 ? formData.design_categories : undefined,
