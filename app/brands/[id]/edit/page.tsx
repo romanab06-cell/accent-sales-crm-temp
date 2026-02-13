@@ -12,21 +12,35 @@ export default function EditBrandPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [brand, setBrand] = useState<BrandWithRelations | null>(null);
-  const [formData, setFormData] = useState({
-    // Brand fields
+  const [formData, setFormData] = useState<{
+    name: string;
+    type: string;
+    website: string;
+    country: string;
+    country_of_origin: string;
+    status: 'prospect' | 'negotiation' | 'contract' | 'active' | 'inactive' | 'not_relevant';
+    deal_stage: 'lead' | 'qualified' | 'proposal' | 'negotiation' | 'won' | 'lost';
+    priority: number | undefined;
+    comments: string;
+    project_sectors: string[];
+    design_categories: string[];
+    discount: string;
+    payment_terms: string;
+    shipping_terms: string;
+    dealer_access: string;
+    freight_free_limit: string;
+  }>({
     name: '',
     type: '',
     website: '',
     country: '',
     country_of_origin: '',
-    status: 'prospect' as const,
-    deal_stage: 'lead' as const,
-    priority: undefined as number | undefined,
+    status: 'prospect',
+    deal_stage: 'lead',
+    priority: undefined,
     comments: '',
-    project_sectors: [] as string[],
-    design_categories: [] as string[],
-    
-    // Deal fields
+    project_sectors: [],
+    design_categories: [],
     discount: '',
     payment_terms: '',
     shipping_terms: '',
