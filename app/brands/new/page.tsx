@@ -20,7 +20,7 @@ export default function NewBrandPage() {
   design_categories: [] as string[],
     status: 'prospect' as const,
     deal_stage: 'lead' as const,
-    priority: undefined as number | undefined,
+    priority: undefined as 1 | 2 | 3 | undefined,
     comments: '',
     
     // Contact fields (required)
@@ -41,7 +41,7 @@ export default function NewBrandPage() {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: name === 'priority' ? (value === '' ? undefined : parseInt(value) as 1 | 2 | 3) : value
     }));
   };
   const handleSectorToggle = (sector: string) => {
@@ -92,7 +92,7 @@ export default function NewBrandPage() {
   design_categories: formData.design_categories.length > 0 ? formData.design_categories : undefined,
         status: formData.status,
         deal_stage: formData.deal_stage,
-        priority: formData.priority || undefined,
+        priority: formData.priority,
         comments: formData.comments || undefined,
       });
 
