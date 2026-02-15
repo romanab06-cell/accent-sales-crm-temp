@@ -75,6 +75,9 @@ export default function Dashboard() {
                 Tasks
               </Link>
               <Link href="/brands/new" className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
+              <Link href="/analytics" className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900">
+    Analytics
+  </Link>
                 + New Brand
               </Link>
             </nav>
