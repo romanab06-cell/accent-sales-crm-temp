@@ -15,6 +15,7 @@ import {
   Plus,
   Edit,
   Trash2,
+  Share2,
   FileText,
   Calendar,
   CheckCircle2,
@@ -59,7 +60,49 @@ export default function BrandDetailPage({ params }: { params: { id: string } }) 
       alert('Failed to delete brand');
     }
   }
-
+  async function handleShare() {
+    const url = window.location.href;
+    
+    // Try to use Web Share API (works on mobile and some browsers)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${brand?.name} - Brand Details`,
+          text: `Check out ${brand?.name} in our CRM`,
+          url: url
+        });
+      } catch (err) {
+        // User cancelled or error - fallback to copy
+        if (err instanceof Error && err.name !== 'AbortError') {
+          copyToClipboard(url);
+        }
+      }
+    } else {
+      // Fallback: Copy to clipboard
+      copyToClipboard(url);
+    }
+  }
+  
+  function copyToClipboard(text: string) {
+    navigator.clipboard.writeText(text).then(() => {
+      alert('Link copied to clipboard! Share it with your colleague.');
+    }).catch(() => {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        alert('Link copied to clipboard! Share it with your colleague.');
+      } catch (err) {
+        alert(`Share this link: ${text}`);
+      }
+      document.body.removeChild(textArea);
+    });
+  }
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -103,21 +146,28 @@ export default function BrandDetailPage({ params }: { params: { id: string } }) 
               </div>
             </div>
             <div className="flex gap-2">
-              <Link 
-                href={`/brands/${brand.id}/edit`}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                <Edit className="w-4 h-4 inline mr-1" />
-                Edit
-              </Link>
-              <button
-                onClick={handleDeleteBrand}
-                className="px-4 py-2 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-lg hover:bg-red-50"
-              >
-                <Trash2 className="w-4 h-4 inline mr-1" />
-                Delete
-              </button>
-            </div>
+  <button
+    onClick={handleShare}
+    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+  >
+    <Share2 className="w-4 h-4 inline mr-1" />
+    Share
+  </button>
+  <Link 
+    href={`/brands/${brand.id}/edit`}
+    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+  >
+    <Edit className="w-4 h-4 inline mr-1" />
+    Edit
+  </Link>
+  <button
+    onClick={handleDeleteBrand}
+    className="px-4 py-2 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-lg hover:bg-red-50"
+  >
+    <Trash2 className="w-4 h-4 inline mr-1" />
+    Delete
+  </button>
+</div>
           </div>
         </div>
       </header>
