@@ -16,7 +16,7 @@ export default function LoginPage() {
     setError('');
 
     // Check password (change this to your actual password)
-    const correctPassword = 'AccentSales2025';
+    const correctPassword = 'accentgangsters3000!';
 
     if (password === correctPassword) {
       // Set authentication cookie/session
