@@ -33,6 +33,9 @@ export default function BrandDetailPage({ params }: { params: { id: string } }) 
   const [showCommModal, setShowCommModal] = useState(false);
   const [showDocModal, setShowDocModal] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
+  const [showPriceListModal, setShowPriceListModal] = useState(false);
+const [priceListUrl, setPriceListUrl] = useState('');
+const [priceListName, setPriceListName] = useState('');
 
   useEffect(() => {
     loadBrand();
@@ -48,7 +51,29 @@ export default function BrandDetailPage({ params }: { params: { id: string } }) 
       setLoading(false);
     }
   }
-
+  async function handleAddPriceList() {
+    if (!priceListUrl.trim()) {
+      alert('Please enter a URL or file path');
+      return;
+    }
+  
+    try {
+      await documentsApi.create({
+        brand_id: params.id,
+        document_type: 'price_list',
+        name: priceListName || 'Price List',
+        url: priceListUrl,
+      });
+  
+      setPriceListUrl('');
+      setPriceListName('');
+      setShowPriceListModal(false);
+      loadBrand(); // Reload to show new price list
+    } catch (error) {
+      console.error('Error adding price list:', error);
+      alert('Failed to add price list');
+    }
+  }
   async function handleDeleteBrand() {
     if (!confirm('Are you sure you want to delete this brand? This cannot be undone.')) return;
     
@@ -319,7 +344,43 @@ export default function BrandDetailPage({ params }: { params: { id: string } }) 
               </div>
             )}
           </div>
-
+{/* Price Lists */}
+<div className="bg-white rounded-lg shadow p-6">
+  <div className="flex items-center justify-between mb-4">
+    <h2 className="text-lg font-semibold text-gray-900">Price Lists</h2>
+    <button
+      onClick={() => setShowPriceListModal(true)}
+      className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+    >
+      + Add
+    </button>
+  </div>
+  {brand.documents?.filter(d => d.document_type === 'price_list').length > 0 ? (
+    <div className="space-y-2">
+      {brand.documents
+        .filter(d => d.document_type === 'price_list')
+        .map((doc) => (
+          
+            key={doc.id}
+            href={doc.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <FileText className="w-5 h-5 text-blue-600" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">{doc.name}</p>
+              <p className="text-xs text-gray-500">
+                Added {new Date(doc.upload_date).toLocaleDateString()}
+              </p>
+            </div>
+          </a>
+        ))}
+    </div>
+  ) : (
+    <p className="text-gray-500 text-sm">No price list added yet</p>
+  )}
+</div>
           {/* Right Column - Tabs */}
           <div className="lg:col-span-2">
             {/* Tabs */}
@@ -399,7 +460,69 @@ export default function BrandDetailPage({ params }: { params: { id: string } }) 
           </div>
         </div>
       </main>
+{/* Price List Modal */}
+{showPriceListModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Add Price List</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Name (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={priceListName}
+                    onChange={(e) => setPriceListName(e.target.value)}
+                    placeholder="e.g., 2025 Price List, EUR Pricing"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
 
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    URL or Link <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="url"
+                    value={priceListUrl}
+                    onChange={(e) => setPriceListUrl(e.target.value)}
+                    placeholder="https://drive.google.com/... or https://brand.com/pricelist.pdf"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Google Drive link, Dropbox, PDF URL, Excel file, or brand portal
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={() => {
+                    setShowPriceListModal(false);
+                    setPriceListUrl('');
+                    setPriceListName('');
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddPriceList}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                >
+                  Add Price List
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
       {/* Modals would go here - simplified for now */}
     </div>
   );
