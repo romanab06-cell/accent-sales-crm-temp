@@ -523,7 +523,65 @@ const [priceListName, setPriceListName] = useState('');
     </div>
   );
 }
-      {/* Modals would go here - simplified for now */}
+      {{/* Price List Modal */}
+      {showPriceListModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Add Price List</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Name (optional)
+                </label>
+                <input
+                  type="text"
+                  value={priceListName}
+                  onChange={(e) => setPriceListName(e.target.value)}
+                  placeholder="e.g., 2025 Price List, EUR Pricing"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+      
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  URL or Link <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="url"
+                  value={priceListUrl}
+                  onChange={(e) => setPriceListUrl(e.target.value)}
+                  placeholder="https://drive.google.com/... or https://brand.com/pricelist.pdf"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Google Drive link, Dropbox, PDF URL, Excel file, or brand portal
+                </p>
+              </div>
+            </div>
+      
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowPriceListModal(false);
+                  setPriceListUrl('');
+                  setPriceListName('');
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddPriceList}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+              >
+                Add Price List
+              </button>
+            </div>
+          </div>
+        </div>
+      )}/* Modals would go here - simplified for now */}
     </div>
   );
 }
