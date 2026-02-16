@@ -65,24 +65,35 @@ export default function Dashboard() {
         <p className="text-sm text-gray-500">Sales & Partner Management</p>
       </div>
       <div className="flex items-center gap-6">
-        <nav className="flex gap-4">
-          <Link href="/brands" className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900">
-            Brands
-          </Link>
-          <Link href="/communications" className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900">
-            Communications
-          </Link>
-          <Link href="/tasks" className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900">
-            Tasks
-          </Link>
-          <Link href="/analytics" className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900">
-            Analytics
-          </Link>
-        </nav>
-        <Link href="/brands/new" className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
-          + New Brand
-        </Link>
-      </div>
+  <nav className="flex gap-4">
+    <Link href="/brands" className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900">
+      Brands
+    </Link>
+    <Link href="/communications" className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900">
+      Communications
+    </Link>
+    <Link href="/tasks" className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900">
+      Tasks
+    </Link>
+    <Link href="/analytics" className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900">
+      Analytics
+    </Link>
+  </nav>
+  <div className="flex items-center gap-2">
+    <Link href="/brands/new" className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
+      + New Brand
+    </Link>
+    <button
+      onClick={() => {
+        document.cookie = 'accent_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        window.location.href = '/login';
+      }}
+      className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+    >
+      Logout
+    </button>
+  </div>
+</div>
     </div>
   </div>
 </header>
