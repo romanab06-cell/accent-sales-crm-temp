@@ -13,6 +13,13 @@ export default function EditBrandPage({ params }: { params: { id: string } }) {
   const [saving, setSaving] = useState(false);
   const [brand, setBrand] = useState<BrandWithRelations | null>(null);
   const [formData, setFormData] = useState<{
+    const [showAddContact, setShowAddContact] = useState(false);
+  const [newContact, setNewContact] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    role: '',
+  });
     name: string;
     type: string;
     website: string;
@@ -118,7 +125,30 @@ export default function EditBrandPage({ params }: { params: { id: string } }) {
       alert('Brand name is required');
       return;
     }
-
+    async function handleAddContact() {
+      if (!newContact.name.trim() || !newContact.email.trim()) {
+        alert('Name and email are required');
+        return;
+      }
+    
+      try {
+        await contactsApi.create({
+          brand_id: params.id,
+          name: newContact.name,
+          email: newContact.email,
+          phone: newContact.phone || undefined,
+          role: newContact.role || undefined,
+          is_primary: !brand?.contacts || brand.contacts.length === 0, // Make primary if first contact
+        });
+    
+        setNewContact({ name: '', email: '', phone: '', role: '' });
+        setShowAddContact(false);
+        loadBrand(); // Reload to show new contact
+      } catch (error) {
+        console.error('Error adding contact:', error);
+        alert('Failed to add contact');
+      }
+    }
     setSaving(true);
     
     try {
@@ -360,80 +390,162 @@ export default function EditBrandPage({ params }: { params: { id: string } }) {
           </div>
 {/* Contact Management */}
 <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Contacts</h2>
-            {brand.contacts && brand.contacts.length > 0 ? (
-              <div className="space-y-4">
-                {brand.contacts.map((contact, index) => (
-                  <div key={contact.id} className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-medium text-gray-900">Contact {index + 1}</h3>
-                      {contact.is_primary && (
-                        <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
-                          Primary
-                        </span>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                        <input
-                          type="text"
-                          defaultValue={contact.name}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          onBlur={async (e) => {
-                            if (e.target.value !== contact.name) {
-                              await contactsApi.update(contact.id, { name: e.target.value });
-                            }
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                        <input
-                          type="text"
-                          defaultValue={contact.role || ''}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          onBlur={async (e) => {
-                            if (e.target.value !== contact.role) {
-                              await contactsApi.update(contact.id, { role: e.target.value });
-                            }
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                        <input
-                          type="email"
-                          defaultValue={contact.email || ''}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          onBlur={async (e) => {
-                            if (e.target.value !== contact.email) {
-                              await contactsApi.update(contact.id, { email: e.target.value });
-                            }
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                        <input
-                          type="tel"
-                          defaultValue={contact.phone || ''}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          onBlur={async (e) => {
-                            if (e.target.value !== contact.phone) {
-                              await contactsApi.update(contact.id, { phone: e.target.value });
-                            }
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500 text-sm">No contacts added yet</p>
+  <div className="flex items-center justify-between mb-4">
+    <h2 className="text-lg font-semibold text-gray-900">Contacts</h2>
+    <button
+      onClick={() => setShowAddContact(true)}
+      className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+    >
+      + Add Contact
+    </button>
+  </div>
+
+  {/* Add New Contact Form */}
+  {showAddContact && (
+    <div className="mb-4 p-4 border-2 border-blue-200 rounded-lg bg-blue-50">
+      <h3 className="font-medium text-gray-900 mb-3">New Contact</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Name <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={newContact.name}
+            onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Contact name"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+          <input
+            type="text"
+            value={newContact.role}
+            onChange={(e) => setNewContact({ ...newContact, role: e.target.value })}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="e.g., Sales Manager"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Email <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="email"
+            value={newContact.email}
+            onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="email@example.com"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+          <input
+            type="tel"
+            value={newContact.phone}
+            onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="+1234567890"
+          />
+        </div>
+      </div>
+      <div className="flex justify-end gap-2 mt-4">
+        <button
+          onClick={() => {
+            setShowAddContact(false);
+            setNewContact({ name: '', email: '', phone: '', role: '' });
+          }}
+          className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleAddContact}
+          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+        >
+          Add Contact
+        </button>
+      </div>
+    </div>
+  )}
+
+  {/* Existing Contacts */}
+  {brand.contacts && brand.contacts.length > 0 ? (
+    <div className="space-y-4">
+      {brand.contacts.map((contact, index) => (
+        <div key={contact.id} className="p-4 border rounded-lg">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-medium text-gray-900">Contact {index + 1}</h3>
+            {contact.is_primary && (
+              <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
+                Primary
+              </span>
             )}
           </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+              <input
+                type="text"
+                defaultValue={contact.name}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onBlur={async (e) => {
+                  if (e.target.value !== contact.name) {
+                    await contactsApi.update(contact.id, { name: e.target.value });
+                  }
+                }}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+              <input
+                type="text"
+                defaultValue={contact.role || ''}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onBlur={async (e) => {
+                  if (e.target.value !== contact.role) {
+                    await contactsApi.update(contact.id, { role: e.target.value });
+                  }
+                }}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input
+                type="email"
+                defaultValue={contact.email || ''}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onBlur={async (e) => {
+                  if (e.target.value !== contact.email) {
+                    await contactsApi.update(contact.id, { email: e.target.value });
+                  }
+                }}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+              <input
+                type="tel"
+                defaultValue={contact.phone || ''}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onBlur={async (e) => {
+                  if (e.target.value !== contact.phone) {
+                    await contactsApi.update(contact.id, { phone: e.target.value });
+                  }
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  ) : (
+    !showAddContact && (
+      <p className="text-gray-500 text-sm">No contacts yet. Click "+ Add Contact" to add one.</p>
+    )
+  )}
+</div>
           {/* Deal Terms */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Deal Terms</h2>
