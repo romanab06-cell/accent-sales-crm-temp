@@ -34,8 +34,8 @@ export default function BrandDetailPage({ params }: { params: { id: string } }) 
   const [showDocModal, setShowDocModal] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showPriceListModal, setShowPriceListModal] = useState(false);
-const [priceListUrl, setPriceListUrl] = useState('');
-const [priceListName, setPriceListName] = useState('');
+  const [priceListUrl, setPriceListUrl] = useState('');
+  const [priceListName, setPriceListName] = useState('');
 
   useEffect(() => {
     loadBrand();
@@ -51,6 +51,7 @@ const [priceListName, setPriceListName] = useState('');
       setLoading(false);
     }
   }
+
   async function handleAddPriceList() {
     if (!priceListUrl.trim()) {
       alert('Please enter a URL or file path');
@@ -68,12 +69,13 @@ const [priceListName, setPriceListName] = useState('');
       setPriceListUrl('');
       setPriceListName('');
       setShowPriceListModal(false);
-      loadBrand(); // Reload to show new price list
+      loadBrand();
     } catch (error) {
       console.error('Error adding price list:', error);
       alert('Failed to add price list');
     }
   }
+
   async function handleDeleteBrand() {
     if (!confirm('Are you sure you want to delete this brand? This cannot be undone.')) return;
     
@@ -85,10 +87,10 @@ const [priceListName, setPriceListName] = useState('');
       alert('Failed to delete brand');
     }
   }
+
   async function handleShare() {
     const url = window.location.href;
     
-    // Try to use Web Share API (works on mobile and some browsers)
     if (navigator.share) {
       try {
         await navigator.share({
@@ -97,13 +99,11 @@ const [priceListName, setPriceListName] = useState('');
           url: url
         });
       } catch (err) {
-        // User cancelled or error - fallback to copy
         if (err instanceof Error && err.name !== 'AbortError') {
           copyToClipboard(url);
         }
       }
     } else {
-      // Fallback: Copy to clipboard
       copyToClipboard(url);
     }
   }
@@ -112,7 +112,6 @@ const [priceListName, setPriceListName] = useState('');
     navigator.clipboard.writeText(text).then(() => {
       alert('Link copied to clipboard! Share it with your colleague.');
     }).catch(() => {
-      // Fallback for older browsers
       const textArea = document.createElement('textarea');
       textArea.value = text;
       textArea.style.position = 'fixed';
@@ -128,6 +127,7 @@ const [priceListName, setPriceListName] = useState('');
       document.body.removeChild(textArea);
     });
   }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -171,28 +171,28 @@ const [priceListName, setPriceListName] = useState('');
               </div>
             </div>
             <div className="flex gap-2">
-  <button
-    onClick={handleShare}
-    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-  >
-    <Share2 className="w-4 h-4 inline mr-1" />
-    Share
-  </button>
-  <Link 
-    href={`/brands/${brand.id}/edit`}
-    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-  >
-    <Edit className="w-4 h-4 inline mr-1" />
-    Edit
-  </Link>
-  <button
-    onClick={handleDeleteBrand}
-    className="px-4 py-2 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-lg hover:bg-red-50"
-  >
-    <Trash2 className="w-4 h-4 inline mr-1" />
-    Delete
-  </button>
-</div>
+              <button
+                onClick={handleShare}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                <Share2 className="w-4 h-4 inline mr-1" />
+                Share
+              </button>
+              <Link 
+                href={`/brands/${brand.id}/edit`}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                <Edit className="w-4 h-4 inline mr-1" />
+                Edit
+              </Link>
+              <button
+                onClick={handleDeleteBrand}
+                className="px-4 py-2 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-lg hover:bg-red-50"
+              >
+                <Trash2 className="w-4 h-4 inline mr-1" />
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -220,37 +220,35 @@ const [priceListName, setPriceListName] = useState('');
                   </div>
                 )}
                 {brand.country_of_origin && (
-  <div className="flex items-center gap-2 text-sm">
-    <span className="text-gray-600">Origin:</span>
-    <span className="font-medium">{brand.country_of_origin}</span>
-  </div>
-)}
-
-{brand.design_categories && brand.design_categories.length > 0 && (
-  <div className="text-sm">
-    <span className="text-gray-600 block mb-1">Design Categories:</span>
-    <div className="flex flex-wrap gap-1">
-      {brand.design_categories.map(cat => (
-        <span key={cat} className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
-          {cat}
-        </span>
-      ))}
-    </div>
-  </div>
-)}
-
-{brand.project_sectors && brand.project_sectors.length > 0 && (
-  <div className="text-sm">
-    <span className="text-gray-600 block mb-1">Project Sectors:</span>
-    <div className="flex flex-wrap gap-1">
-      {brand.project_sectors.map(sector => (
-        <span key={sector} className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full">
-          {sector}
-        </span>
-      ))}
-    </div>
-  </div>
-)}
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-gray-600">Origin:</span>
+                    <span className="font-medium">{brand.country_of_origin}</span>
+                  </div>
+                )}
+                {brand.design_categories && brand.design_categories.length > 0 && (
+                  <div className="text-sm">
+                    <span className="text-gray-600 block mb-1">Design Categories:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {brand.design_categories.map(cat => (
+                        <span key={cat} className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
+                          {cat}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {brand.project_sectors && brand.project_sectors.length > 0 && (
+                  <div className="text-sm">
+                    <span className="text-gray-600 block mb-1">Project Sectors:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {brand.project_sectors.map(sector => (
+                        <span key={sector} className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full">
+                          {sector}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div className="flex items-center gap-2 text-sm">
                   <span className="text-gray-600">Status:</span>
                   <span className={`px-2 py-1 text-xs rounded-full ${
@@ -343,47 +341,48 @@ const [priceListName, setPriceListName] = useState('');
                 </div>
               </div>
             )}
-          </div>
-{/* Price Lists */}
-<div className="bg-white rounded-lg shadow p-6">
-  <div className="flex items-center justify-between mb-4">
-    <h2 className="text-lg font-semibold text-gray-900">Price Lists</h2>
-    <button
-      onClick={() => setShowPriceListModal(true)}
-      className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-    >
-      + Add
-    </button>
-  </div>
-  {brand.documents?.filter(d => d.document_type === 'price_list').length > 0 ? (
-    <div className="space-y-2">
-      {brand.documents
-        .filter(d => d.document_type === 'price_list')
-        .map((doc) => (
-          
-            key={doc.id}
-            href={doc.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 p-3 border rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <FileText className="w-5 h-5 text-blue-600" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">{doc.name}</p>
-              <p className="text-xs text-gray-500">
-                Added {new Date(doc.upload_date).toLocaleDateString()}
-              </p>
+
+            {/* Price Lists */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">Price Lists</h2>
+                <button
+                  onClick={() => setShowPriceListModal(true)}
+                  className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                >
+                  + Add
+                </button>
+              </div>
+              {brand.documents?.filter(d => d.document_type === 'price_list').length > 0 ? (
+                <div className="space-y-2">
+                  {brand.documents
+                    .filter(d => d.document_type === 'price_list')
+                    .map((doc) => (
+                      <a
+                        key={doc.id}
+                        href={doc.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <FileText className="w-5 h-5 text-blue-600" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{doc.name}</p>
+                          <p className="text-xs text-gray-500">
+                            Added {new Date(doc.upload_date).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </a>
+                    ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm">No price list added yet</p>
+              )}
             </div>
-          </a>
-        ))}
-    </div>
-  ) : (
-    <p className="text-gray-500 text-sm">No price list added yet</p>
-  )}
-</div>
+          </div>
+
           {/* Right Column - Tabs */}
           <div className="lg:col-span-2">
-            {/* Tabs */}
             <div className="bg-white rounded-lg shadow overflow-hidden">
               <div className="border-b border-gray-200">
                 <nav className="flex -mb-px">
@@ -459,9 +458,9 @@ const [priceListName, setPriceListName] = useState('');
             </div>
           </div>
         </div>
-      </main>
-{/* Price List Modal */}
-{showPriceListModal && (
+
+        {/* Price List Modal */}
+        {showPriceListModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Add Price List</h3>
@@ -520,68 +519,6 @@ const [priceListName, setPriceListName] = useState('');
           </div>
         )}
       </main>
-    </div>
-  );
-}
-      {{/* Price List Modal */}
-      {showPriceListModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Add Price List</h3>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Name (optional)
-                </label>
-                <input
-                  type="text"
-                  value={priceListName}
-                  onChange={(e) => setPriceListName(e.target.value)}
-                  placeholder="e.g., 2025 Price List, EUR Pricing"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-      
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  URL or Link <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="url"
-                  value={priceListUrl}
-                  onChange={(e) => setPriceListUrl(e.target.value)}
-                  placeholder="https://drive.google.com/... or https://brand.com/pricelist.pdf"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Google Drive link, Dropbox, PDF URL, Excel file, or brand portal
-                </p>
-              </div>
-            </div>
-      
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={() => {
-                  setShowPriceListModal(false);
-                  setPriceListUrl('');
-                  setPriceListName('');
-                }}
-                className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddPriceList}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-              >
-                Add Price List
-              </button>
-            </div>
-          </div>
-        </div>
-      )}/* Modals would go here - simplified for now */}
     </div>
   );
 }
