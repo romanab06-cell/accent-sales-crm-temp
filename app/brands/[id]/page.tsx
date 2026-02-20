@@ -352,32 +352,24 @@ export default function BrandDetailPage({ params }: { params: { id: string } }) 
                 >
                   + Add
                 </button>
-              </div>  {brand.documents?.filter(d 
-{brand.documents && brand.documents.filter(d => d.document_type === 'price_list').length > 0 ? (
-  <div className="space-y-2">
-    {brand.documents
-      .filter(d => d.document_type === 'price_list')
-      .map((doc) => (
-        
-          key={doc.id}
-          href={doc.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 p-3 border rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          <FileText className="w-5 h-5 text-blue-600" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">{doc.name}</p>
-            <p className="text-xs text-gray-500">
-              Added {new Date(doc.upload_date).toLocaleDateString()}
-            </p>
-          </div>
-        </a>
-      ))}
-  </div>
-) : (
-  <p className="text-gray-500 text-sm">No price list added yet</p>
-)}
+              </div>
+              {Array.isArray(brand.documents) && brand.documents.filter(d => d.document_type === 'price_list').length > 0 ? (
+                <div className="space-y-2">
+                  {brand.documents
+                    .filter(d => d.document_type === 'price_list')
+                    .map((doc) => (
+                      <a
+                        key={doc.id}
+                        href={doc.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <FileText className="w-5 h-5 text-blue-600" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{doc.name}</p>
+                          <p className="text-xs text-gray-500">
+                            Added {new Date(doc.upload_date).toLocaleDateString()}
                           </p>
                         </div>
                       </a>
