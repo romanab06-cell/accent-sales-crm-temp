@@ -19,7 +19,8 @@ import {
   FileText,
   Calendar,
   CheckCircle2,
-  MessageSquare
+  MessageSquare,
+  X
 } from 'lucide-react';
 
 export default function BrandDetailPage({ params }: { params: { id: string } }) {
@@ -29,13 +30,36 @@ export default function BrandDetailPage({ params }: { params: { id: string } }) 
   const [activeTab, setActiveTab] = useState<'overview' | 'communications' | 'documents' | 'tasks'>('overview');
   
   // Modal states
-  const [showContactModal, setShowContactModal] = useState(false);
   const [showCommModal, setShowCommModal] = useState(false);
   const [showDocModal, setShowDocModal] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showPriceListModal, setShowPriceListModal] = useState(false);
+  
+  // Form states
   const [priceListUrl, setPriceListUrl] = useState('');
   const [priceListName, setPriceListName] = useState('');
+  
+  const [commForm, setCommForm] = useState({
+    type: 'email' as 'email' | 'phone' | 'meeting',
+    subject: '',
+    summary: '',
+    date: new Date().toISOString().split('T')[0],
+    follow_up_required: false,
+  });
+  
+  const [docForm, setDocForm] = useState({
+    name: '',
+    url: '',
+    document_type: 'master_data' as 'master_data' | 'price_list' | 'images' | 'contract' | 'other',
+  });
+  
+  const [taskForm, setTaskForm] = useState({
+    title: '',
+    description: '',
+    due_date: '',
+    priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent',
+    assigned_to: '',
+  });
 
   useEffect(() => {
     loadBrand();
@@ -73,6 +97,145 @@ export default function BrandDetailPage({ params }: { params: { id: string } }) 
     } catch (error) {
       console.error('Error adding price list:', error);
       alert('Failed to add price list');
+    }
+  }
+
+  async function handleAddCommunication() {
+    if (!commForm.subject.trim() || !commForm.summary.trim()) {
+      alert('Subject and summary are required');
+      return;
+    }
+
+    try {
+      await communicationsApi.create({
+        brand_id: params.id,
+        type: commForm.type,
+        subject: commForm.subject,
+        summary: commForm.summary,
+        date: commForm.date,
+        follow_up_required: commForm.follow_up_required,
+      });
+
+      setCommForm({
+        type: 'email',
+        subject: '',
+        summary: '',
+        date: new Date().toISOString().split('T')[0],
+        follow_up_required: false,
+      });
+      setShowCommModal(false);
+      loadBrand();
+    } catch (error) {
+      console.error('Error adding communication:', error);
+      alert('Failed to add communication');
+    }
+  }
+
+  async function handleAddDocument() {
+    if (!docForm.name.trim() || !docForm.url.trim()) {
+      alert('Name and URL are required');
+      return;
+    }
+
+    try {
+      await documentsApi.create({
+        brand_id: params.id,
+        name: docForm.name,
+        url: docForm.url,
+        document_type: docForm.document_type,
+      });
+
+      setDocForm({
+        name: '',
+        url: '',
+        document_type: 'master_data',
+      });
+      setShowDocModal(false);
+      loadBrand();
+    } catch (error) {
+      console.error('Error adding document:', error);
+      alert('Failed to add document');
+    }
+  }
+
+  async function handleAddTask() {
+    if (!taskForm.title.trim()) {
+      alert('Task title is required');
+      return;
+    }
+
+    try {
+      await tasksApi.create({
+        brand_id: params.id,
+        title: taskForm.title,
+        description: taskForm.description || undefined,
+        due_date: taskForm.due_date || undefined,
+        priority: taskForm.priority,
+        assigned_to: taskForm.assigned_to || undefined,
+        status: 'pending',
+      });
+
+      setTaskForm({
+        title: '',
+        description: '',
+        due_date: '',
+        priority: 'medium',
+        assigned_to: '',
+      });
+      setShowTaskModal(false);
+      loadBrand();
+    } catch (error) {
+      console.error('Error adding task:', error);
+      alert('Failed to add task');
+    }
+  }
+
+  async function handleDeleteCommunication(id: string) {
+    if (!confirm('Delete this communication?')) return;
+    
+    try {
+      await communicationsApi.delete(id);
+      loadBrand();
+    } catch (error) {
+      console.error('Error deleting communication:', error);
+      alert('Failed to delete communication');
+    }
+  }
+
+  async function handleDeleteDocument(id: string) {
+    if (!confirm('Delete this document?')) return;
+    
+    try {
+      await documentsApi.delete(id);
+      loadBrand();
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      alert('Failed to delete document');
+    }
+  }
+
+  async function handleDeleteTask(id: string) {
+    if (!confirm('Delete this task?')) return;
+    
+    try {
+      await tasksApi.delete(id);
+      loadBrand();
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      alert('Failed to delete task');
+    }
+  }
+
+  async function handleToggleTaskComplete(task: Task) {
+    try {
+      await tasksApi.update(task.id, {
+        status: task.status === 'completed' ? 'pending' : 'completed',
+        completed_at: task.status === 'completed' ? null : new Date().toISOString(),
+      });
+      loadBrand();
+    } catch (error) {
+      console.error('Error updating task:', error);
+      alert('Failed to update task');
     }
   }
 
@@ -353,26 +516,33 @@ export default function BrandDetailPage({ params }: { params: { id: string } }) 
                   + Add
                 </button>
               </div>
-              {Array.isArray(brand.documents) && brand.documents.filter(d => d.document_type === 'price_list').length > 0 ? (
+              {brand.documents && brand.documents.filter(d => d.document_type === 'price_list').length > 0 ? (
                 <div className="space-y-2">
                   {brand.documents
                     .filter(d => d.document_type === 'price_list')
                     .map((doc) => (
-                      <a
-                        key={doc.id}
-                        href={doc.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 p-3 border rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        <FileText className="w-5 h-5 text-blue-600" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">{doc.name}</p>
-                          <p className="text-xs text-gray-500">
-                            Added {new Date(doc.upload_date).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </a>
+                      <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+                        <a
+                          href={doc.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 flex-1"
+                        >
+                          <FileText className="w-5 h-5 text-blue-600" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{doc.name}</p>
+                            <p className="text-xs text-gray-500">
+                              Added {new Date(doc.upload_date).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </a>
+                        <button
+                          onClick={() => handleDeleteDocument(doc.id)}
+                          className="ml-2 p-1 text-red-600 hover:bg-red-50 rounded"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     ))}
                 </div>
               ) : (
@@ -437,21 +607,22 @@ export default function BrandDetailPage({ params }: { params: { id: string } }) 
                   <CommunicationsTab 
                     communications={brand.communications || []} 
                     onAdd={() => setShowCommModal(true)}
-                    onRefresh={loadBrand}
+                    onDelete={handleDeleteCommunication}
                   />
                 )}
                 {activeTab === 'documents' && (
                   <DocumentsTab 
                     documents={brand.documents || []} 
                     onAdd={() => setShowDocModal(true)}
-                    onRefresh={loadBrand}
+                    onDelete={handleDeleteDocument}
                   />
                 )}
                 {activeTab === 'tasks' && (
                   <TasksTab 
                     tasks={brand.tasks || []} 
                     onAdd={() => setShowTaskModal(true)}
-                    onRefresh={loadBrand}
+                    onDelete={handleDeleteTask}
+                    onToggleComplete={handleToggleTaskComplete}
                   />
                 )}
               </div>
@@ -459,17 +630,22 @@ export default function BrandDetailPage({ params }: { params: { id: string } }) 
           </div>
         </div>
 
+        {/* MODALS */}
+        
         {/* Price List Modal */}
         {showPriceListModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Add Price List</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Add Price List</h3>
+                <button onClick={() => setShowPriceListModal(false)} className="text-gray-400 hover:text-gray-600">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
               
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Name (optional)
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Name (optional)</label>
                   <input
                     type="text"
                     value={priceListName}
@@ -487,13 +663,11 @@ export default function BrandDetailPage({ params }: { params: { id: string } }) 
                     type="url"
                     value={priceListUrl}
                     onChange={(e) => setPriceListUrl(e.target.value)}
-                    placeholder="https://drive.google.com/... or https://brand.com/pricelist.pdf"
+                    placeholder="https://drive.google.com/..."
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Google Drive link, Dropbox, PDF URL, Excel file, or brand portal
-                  </p>
+                  <p className="text-xs text-gray-500 mt-1">Google Drive, Dropbox, PDF URL, etc.</p>
                 </div>
               </div>
 
@@ -513,6 +687,267 @@ export default function BrandDetailPage({ params }: { params: { id: string } }) 
                   className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
                 >
                   Add Price List
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Communication Modal */}
+        {showCommModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Log Communication</h3>
+                <button onClick={() => setShowCommModal(false)} className="text-gray-400 hover:text-gray-600">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                  <select
+                    value={commForm.type}
+                    onChange={(e) => setCommForm({ ...commForm, type: e.target.value as any })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="email">Email</option>
+                    <option value="phone">Phone Call</option>
+                    <option value="meeting">Meeting</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Subject <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={commForm.subject}
+                    onChange={(e) => setCommForm({ ...commForm, subject: e.target.value })}
+                    placeholder="e.g., Discussed 2025 pricing"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Summary <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    value={commForm.summary}
+                    onChange={(e) => setCommForm({ ...commForm, summary: e.target.value })}
+                    placeholder="Brief summary of the communication..."
+                    rows={3}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                  <input
+                    type="date"
+                    value={commForm.date}
+                    onChange={(e) => setCommForm({ ...commForm, date: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="follow_up"
+                    checked={commForm.follow_up_required}
+                    onChange={(e) => setCommForm({ ...commForm, follow_up_required: e.target.checked })}
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                  <label htmlFor="follow_up" className="text-sm text-gray-700">Follow-up required</label>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={() => setShowCommModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddCommunication}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                >
+                  Add Communication
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Document Modal */}
+        {showDocModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Add Document</h3>
+                <button onClick={() => setShowDocModal(false)} className="text-gray-400 hover:text-gray-600">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Document Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={docForm.name}
+                    onChange={(e) => setDocForm({ ...docForm, name: e.target.value })}
+                    placeholder="e.g., Master Data Sheet"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Document Type</label>
+                  <select
+                    value={docForm.document_type}
+                    onChange={(e) => setDocForm({ ...docForm, document_type: e.target.value as any })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="master_data">Master Data</option>
+                    <option value="price_list">Price List</option>
+                    <option value="images">Images</option>
+                    <option value="contract">Contract</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    URL or Link <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="url"
+                    value={docForm.url}
+                    onChange={(e) => setDocForm({ ...docForm, url: e.target.value })}
+                    placeholder="https://drive.google.com/..."
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Google Drive, Dropbox, or direct link</p>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={() => setShowDocModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddDocument}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                >
+                  Add Document
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Task Modal */}
+        {showTaskModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Add Task</h3>
+                <button onClick={() => setShowTaskModal(false)} className="text-gray-400 hover:text-gray-600">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Task Title <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={taskForm.title}
+                    onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
+                    placeholder="e.g., Follow up on pricing"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <textarea
+                    value={taskForm.description}
+                    onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
+                    placeholder="Optional details..."
+                    rows={2}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                    <input
+                      type="date"
+                      value={taskForm.due_date}
+                      onChange={(e) => setTaskForm({ ...taskForm, due_date: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                    <select
+                      value={taskForm.priority}
+                      onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value as any })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                      <option value="urgent">Urgent</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
+                  <input
+                    type="text"
+                    value={taskForm.assigned_to}
+                    onChange={(e) => setTaskForm({ ...taskForm, assigned_to: e.target.value })}
+                    placeholder="e.g., John Doe"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={() => setShowTaskModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddTask}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                >
+                  Add Task
                 </button>
               </div>
             </div>
@@ -561,10 +996,10 @@ function OverviewTab({ brand }: { brand: BrandWithRelations }) {
   );
 }
 
-function CommunicationsTab({ communications, onAdd, onRefresh }: { 
+function CommunicationsTab({ communications, onAdd, onDelete }: { 
   communications: Communication[]; 
   onAdd: () => void;
-  onRefresh: () => void;
+  onDelete: (id: string) => void;
 }) {
   return (
     <div>
@@ -582,9 +1017,9 @@ function CommunicationsTab({ communications, onAdd, onRefresh }: {
       {communications.length > 0 ? (
         <div className="space-y-4">
           {communications.map((comm) => (
-            <div key={comm.id} className="border-l-4 border-blue-500 pl-4 py-2">
+            <div key={comm.id} className="border-l-4 border-blue-500 pl-4 py-2 relative group">
               <div className="flex items-start justify-between mb-2">
-                <div>
+                <div className="flex-1">
                   <div className="flex items-center gap-2">
                     {comm.type === 'email' && <Mail className="w-4 h-4 text-gray-400" />}
                     {comm.type === 'phone' && <Phone className="w-4 h-4 text-gray-400" />}
@@ -592,10 +1027,23 @@ function CommunicationsTab({ communications, onAdd, onRefresh }: {
                     <span className="font-medium text-gray-900">{comm.subject || comm.type}</span>
                   </div>
                   <p className="text-sm text-gray-600 mt-1">{comm.summary}</p>
+                  <div className="flex items-center gap-4 mt-2">
+                    <span className="text-xs text-gray-400">
+                      {new Date(comm.date).toLocaleDateString()}
+                    </span>
+                    {comm.created_at && (
+                      <span className="text-xs text-gray-400">
+                        Added {new Date(comm.created_at).toLocaleString()}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <span className="text-xs text-gray-400">
-                  {new Date(comm.date).toLocaleDateString()}
-                </span>
+                <button
+                  onClick={() => onDelete(comm.id)}
+                  className="ml-2 p-1 text-red-600 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
               {comm.follow_up_required && (
                 <span className="inline-block px-2 py-1 text-xs bg-yellow-100 text-yellow-700 rounded-full">
@@ -612,10 +1060,10 @@ function CommunicationsTab({ communications, onAdd, onRefresh }: {
   );
 }
 
-function DocumentsTab({ documents, onAdd, onRefresh }: { 
+function DocumentsTab({ documents, onAdd, onDelete }: { 
   documents: Document[]; 
   onAdd: () => void;
-  onRefresh: () => void;
+  onDelete: (id: string) => void;
 }) {
   return (
     <div>
@@ -633,22 +1081,27 @@ function DocumentsTab({ documents, onAdd, onRefresh }: {
       {documents.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {documents.map((doc) => (
-            <a
-              key={doc.id}
-              href={doc.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-start gap-3 p-4 border rounded-lg hover:bg-gray-50 transition-colors"
-            >
+            <div key={doc.id} className="flex items-start gap-3 p-4 border rounded-lg hover:bg-gray-50 transition-colors group">
               <FileText className="w-5 h-5 text-gray-400 mt-1" />
-              <div className="flex-1 min-w-0">
+              <a
+                href={doc.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 min-w-0"
+              >
                 <p className="font-medium text-gray-900 truncate">{doc.name}</p>
                 <p className="text-sm text-gray-500 capitalize">{doc.document_type.replace('_', ' ')}</p>
                 <p className="text-xs text-gray-400 mt-1">
                   {new Date(doc.upload_date).toLocaleDateString()}
                 </p>
-              </div>
-            </a>
+              </a>
+              <button
+                onClick={() => onDelete(doc.id)}
+                className="p-1 text-red-600 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
           ))}
         </div>
       ) : (
@@ -658,10 +1111,11 @@ function DocumentsTab({ documents, onAdd, onRefresh }: {
   );
 }
 
-function TasksTab({ tasks, onAdd, onRefresh }: { 
+function TasksTab({ tasks, onAdd, onDelete, onToggleComplete }: { 
   tasks: Task[]; 
   onAdd: () => void;
-  onRefresh: () => void;
+  onDelete: (id: string) => void;
+  onToggleComplete: (task: Task) => void;
 }) {
   const pendingTasks = tasks.filter(t => t.status !== 'completed');
   const completedTasks = tasks.filter(t => t.status === 'completed');
@@ -685,15 +1139,25 @@ function TasksTab({ tasks, onAdd, onRefresh }: {
           <h4 className="text-sm font-semibold text-gray-700 mb-3">Pending</h4>
           <div className="space-y-2">
             {pendingTasks.map((task) => (
-              <div key={task.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                <CheckCircle2 className="w-5 h-5 text-gray-400 mt-0.5" />
+              <div key={task.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg group">
+                <button
+                  onClick={() => onToggleComplete(task)}
+                  className="mt-0.5"
+                >
+                  <CheckCircle2 className="w-5 h-5 text-gray-400 hover:text-green-600" />
+                </button>
                 <div className="flex-1">
                   <p className="font-medium text-gray-900">{task.title}</p>
                   {task.description && <p className="text-sm text-gray-600 mt-1">{task.description}</p>}
-                  <div className="flex items-center gap-2 mt-2">
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
                     {task.due_date && (
                       <span className="text-xs text-gray-500">
                         Due: {new Date(task.due_date).toLocaleDateString()}
+                      </span>
+                    )}
+                    {task.created_at && (
+                      <span className="text-xs text-gray-400">
+                        Created {new Date(task.created_at).toLocaleDateString()}
                       </span>
                     )}
                     <span className={`px-2 py-1 text-xs rounded-full ${
@@ -706,6 +1170,12 @@ function TasksTab({ tasks, onAdd, onRefresh }: {
                     </span>
                   </div>
                 </div>
+                <button
+                  onClick={() => onDelete(task.id)}
+                  className="p-1 text-red-600 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             ))}
           </div>
@@ -718,8 +1188,13 @@ function TasksTab({ tasks, onAdd, onRefresh }: {
           <h4 className="text-sm font-semibold text-gray-700 mb-3">Completed</h4>
           <div className="space-y-2">
             {completedTasks.map((task) => (
-              <div key={task.id} className="flex items-start gap-3 p-3 bg-green-50 rounded-lg opacity-75">
-                <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5" />
+              <div key={task.id} className="flex items-start gap-3 p-3 bg-green-50 rounded-lg opacity-75 group">
+                <button
+                  onClick={() => onToggleComplete(task)}
+                  className="mt-0.5"
+                >
+                  <CheckCircle2 className="w-5 h-5 text-green-600" />
+                </button>
                 <div className="flex-1">
                   <p className="font-medium text-gray-900 line-through">{task.title}</p>
                   {task.completed_at && (
@@ -728,6 +1203,12 @@ function TasksTab({ tasks, onAdd, onRefresh }: {
                     </span>
                   )}
                 </div>
+                <button
+                  onClick={() => onDelete(task.id)}
+                  className="p-1 text-red-600 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             ))}
           </div>
