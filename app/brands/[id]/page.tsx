@@ -230,7 +230,7 @@ export default function BrandDetailPage({ params }: { params: { id: string } }) 
     try {
       await tasksApi.update(task.id, {
         status: task.status === 'completed' ? 'pending' : 'completed',
-        completed_at: task.status === 'completed' ? null : new Date().toISOString(),
+        completed_at: task.status === 'completed' ? undefined : new Date().toISOString(),
       });
       loadBrand();
     } catch (error) {
