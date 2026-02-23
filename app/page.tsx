@@ -69,9 +69,12 @@ export default function Dashboard() {
     <Link href="/brands" className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900">
       Brands
     </Link>
-    <Link href="/projects" className="text-gray-600 hover:text-gray-900">
-        Projects
-      </Link>
+    <Link href="/projects" className="text-gray-700 hover:text-gray-900">
+  Projects
+</Link>
+<Link href="/clients" className="text-gray-600 hover:text-gray-900">
+  Clients
+</Link>
     <Link href="/communications" className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900">
       Communications
     </Link>

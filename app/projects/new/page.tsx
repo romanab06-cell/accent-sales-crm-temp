@@ -462,7 +462,7 @@ export default function NewProjectPage() {
                   name="project_manager"
                   value={formData.project_manager}
                   onChange={handleChange}
-                  placeholder="e.g., Ronina"
+                  placeholder="e.g., Roman"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
