@@ -11,7 +11,8 @@ import {
   User,
   Calendar,
   DollarSign,
-  MapPin
+  MapPin,
+  ArrowLeft
 } from 'lucide-react';
 
 const PROJECT_STATUS_COLORS = {
@@ -152,12 +153,17 @@ export default function ProjectsPage() {
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
-              <p className="mt-1 text-sm text-gray-500">
-                Manage your design projects and track progress
-              </p>
-            </div>
+          <div className="flex items-center gap-4">
+  <Link href="/" className="text-gray-600 hover:text-gray-900">
+    <ArrowLeft className="w-5 h-5" />
+  </Link>
+  <div>
+    <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
+    <p className="mt-1 text-sm text-gray-500">
+      Manage your design projects and track progress
+    </p>
+  </div>
+</div>
             <Link
               href="/projects/new"
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center gap-2"
@@ -208,7 +214,7 @@ export default function ProjectsPage() {
                 <p className="text-sm text-gray-600">In Quotation</p>
                 <p className="text-2xl font-bold text-yellow-600 mt-1">{statusCounts.quotation || 0}</p>
               </div>
-              <DollarSign className="w-10 h-10 text-yellow-600" />
+              <div className="w-10 h-10 text-yellow-600 flex items-center justify-center text-2xl font-bold">€</div>
             </div>
           </div>
         </div>
