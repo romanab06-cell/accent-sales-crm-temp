@@ -1,5 +1,5 @@
 import { supabase, Brand, Contact, Deal, Communication, Document, Task, BrandWithRelations } from './supabase';
-
+export * from './projects-api';
 // ============================================
 // BRANDS API
 // ============================================
