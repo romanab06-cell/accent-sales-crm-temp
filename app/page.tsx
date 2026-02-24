@@ -1,5 +1,6 @@
-import { AuthWrapper } from '@/components/auth-wrapper';
 'use client';
+
+import { AuthWrapper } from '@/components/auth-wrapper';
 
 import { useEffect, useState } from 'react';
 import { brandsApi, communicationsApi, tasksApi } from '@/lib/api';
