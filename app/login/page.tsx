@@ -107,13 +107,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* Info Box */}
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <p className="text-sm text-blue-800 font-medium mb-1">Default Admin Account:</p>
-          <p className="text-xs text-blue-600">Email: admin@accent.com</p>
-          <p className="text-xs text-blue-600">Password: AccentAdmin2024!</p>
-          <p className="text-xs text-blue-500 mt-2 italic">Change password after first login</p>
-        </div>
+
 
         {/* Footer */}
         <p className="text-center text-sm text-gray-500 mt-6">
