@@ -19,18 +19,12 @@ export default function LoginPage() {
   
     try {
       const user = await authApi.login({ email, password });
-      console.log('Login successful:', user);
-      console.log('About to redirect...');
       
-      // Redirect to dashboard
-      router.push('/');
-      router.refresh();
-      
-      console.log('Router.push and refresh called');
+      // Force a hard redirect to dashboard
+      window.location.href = '/';
     } catch (err: any) {
       console.error('Login error:', err);
       setError(err.message || 'Invalid email or password');
-    } finally {
       setLoading(false);
     }
   }
