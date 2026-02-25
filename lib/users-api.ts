@@ -35,29 +35,38 @@ export interface CreateUserData {
 export const authApi = {
   // Login with email/password
   async login(credentials: LoginCredentials): Promise<User> {
-    // Hash password using PostgreSQL crypt function
     const { data, error } = await supabase
       .rpc('authenticate_user', {
         p_email: credentials.email,
         p_password: credentials.password,
       });
-
-    if (error) throw new Error('Invalid email or password');
-    if (!data || data.length === 0) throw new Error('Invalid email or password');
-
+  
+    if (error) {
+      console.error('Supabase error:', error);
+      throw new Error('Invalid email or password');
+    }
+    
+    console.log('Raw data from Supabase:', data);
+  
+    if (!data || data.length === 0) {
+      throw new Error('Invalid email or password');
+    }
+  
     const user = data[0];
-
+    console.log('User object:', user);
+  
     // Update last login
     await supabase
       .from('users')
       .update({ last_login_at: new Date().toISOString() })
       .eq('id', user.id);
-
+  
     // Store in localStorage
     if (typeof window !== 'undefined') {
       localStorage.setItem('accent_user', JSON.stringify(user));
+      console.log('Saved to localStorage:', user);
     }
-
+  
     return user;
   },
 
