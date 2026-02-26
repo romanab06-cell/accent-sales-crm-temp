@@ -22,7 +22,7 @@ export default function LoginPage() {
 
       
       // Force a hard redirect to dashboard
-      window.location.href = '/brands';
+      window.location.href = '/';
     } catch (err: any) {
       alert('Login failed: ' + err.message);
       setError(err.message || 'Invalid email or password');
