@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { clientsApi } from '@/lib/api';
+import { clientsApi, duplicateApi, authApi } from '@/lib/api';
 import Link from 'next/link';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, AlertTriangle, X } from 'lucide-react';
 
 const DESIGN_STYLES = [
   'Modern', 'Contemporary', 'Minimalist', 'Mid-Century Modern', 
@@ -13,9 +13,21 @@ const DESIGN_STYLES = [
   'Bohemian', 'Eclectic', 'Luxury', 'Classic European'
 ];
 
+interface DuplicateCandidate {
+  id: string;
+  name: string;
+  email: string;
+  company_name: string;
+  similarity: number;
+}
+
 export default function NewClientPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [checkingDuplicates, setCheckingDuplicates] = useState(false);
+  const [duplicates, setDuplicates] = useState<DuplicateCandidate[]>([]);
+  const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
+  
   const [formData, setFormData] = useState({
     name: '',
     type: 'architect' as const,
@@ -32,6 +44,44 @@ export default function NewClientPage() {
     notes: '',
     relationship_strength: 'new' as const,
   });
+
+  // Debounced duplicate check
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (formData.name.length >= 3 || formData.email || formData.company_name) {
+        checkForDuplicates();
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [formData.name, formData.email, formData.company_name]);
+
+  async function checkForDuplicates() {
+    if (!formData.name && !formData.email && !formData.company_name) return;
+
+    setCheckingDuplicates(true);
+    try {
+      const results = await duplicateApi.findDuplicateClients(
+        formData.name,
+        formData.email || undefined,
+        formData.company_name || undefined
+      );
+
+      if (results && results.length > 0) {
+        // Filter results with similarity > 0.6
+        const highSimilarity = results.filter((r: any) => r.similarity > 0.6);
+        setDuplicates(highSimilarity);
+        setShowDuplicateWarning(highSimilarity.length > 0);
+      } else {
+        setDuplicates([]);
+        setShowDuplicateWarning(false);
+      }
+    } catch (error) {
+      console.error('Error checking duplicates:', error);
+    } finally {
+      setCheckingDuplicates(false);
+    }
+  }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     const { name, value } = e.target;
@@ -56,9 +106,24 @@ export default function NewClientPage() {
       return;
     }
 
+    // Show warning if duplicates exist
+    if (duplicates.length > 0 && showDuplicateWarning) {
+      const confirmed = confirm(
+        `⚠️ DUPLICATE WARNING!\n\n` +
+        `Found ${duplicates.length} similar client(s):\n` +
+        duplicates.map(d => `• ${d.name} (${d.email || 'no email'})`).join('\n') +
+        `\n\nAre you sure you want to create this as a NEW client?\n\n` +
+        `Click OK to proceed anyway, or Cancel to review.`
+      );
+      
+      if (!confirmed) return;
+    }
+
     setLoading(true);
 
     try {
+      const currentUser = authApi.getCurrentUser();
+      
       const clientData: any = {
         name: formData.name,
         type: formData.type,
@@ -75,6 +140,7 @@ export default function NewClientPage() {
         notes: formData.notes || undefined,
         relationship_strength: formData.relationship_strength,
         projects_completed: 0,
+        user_id: currentUser?.id, // Assign to current user
       };
 
       const newClient = await clientsApi.create(clientData);
@@ -105,13 +171,65 @@ export default function NewClientPage() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        {/* Duplicate Warning Banner */}
+        {showDuplicateWarning && duplicates.length > 0 && (
+          <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg">
+            <div className="flex items-start">
+              <AlertTriangle className="w-6 h-6 text-yellow-600 mt-0.5 mr-3 flex-shrink-0" />
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-yellow-800 mb-2">
+                  ⚠️ Potential Duplicate Client Found!
+                </h3>
+                <p className="text-sm text-yellow-700 mb-3">
+                  We found {duplicates.length} similar client{duplicates.length > 1 ? 's' : ''} already in the system:
+                </p>
+                <div className="space-y-2">
+                  {duplicates.map(dup => (
+                    <div key={dup.id} className="bg-white border border-yellow-200 rounded p-3">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <Link 
+                            href={`/clients/${dup.id}`}
+                            className="font-medium text-blue-600 hover:text-blue-800"
+                            target="_blank"
+                          >
+                            {dup.name}
+                          </Link>
+                          {dup.company_name && (
+                            <p className="text-sm text-gray-600">{dup.company_name}</p>
+                          )}
+                          {dup.email && (
+                            <p className="text-sm text-gray-500">{dup.email}</p>
+                          )}
+                        </div>
+                        <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                          {Math.round(dup.similarity * 100)}% match
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-sm text-yellow-700 mt-3 font-medium">
+                  Please review these clients before creating a new one to avoid duplicates.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowDuplicateWarning(false)}
+                className="text-yellow-600 hover:text-yellow-800 ml-2"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Information */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="md:col-span-2">
+              <div className="md:col-span-2 relative">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Client Name <span className="text-red-500">*</span>
                 </label>
@@ -124,6 +242,11 @@ export default function NewClientPage() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                 />
+                {checkingDuplicates && (
+                  <span className="absolute right-3 top-9 text-xs text-gray-500">
+                    Checking for duplicates...
+                  </span>
+                )}
               </div>
 
               <div>
