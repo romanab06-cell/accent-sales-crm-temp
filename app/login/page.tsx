@@ -19,11 +19,12 @@ export default function LoginPage() {
   
     try {
       const user = await authApi.login({ email, password });
+
       
       // Force a hard redirect to dashboard
-      window.location.href = '/';
+      window.location.href = '/brands';
     } catch (err: any) {
-      console.error('Login error:', err);
+      alert('Login failed: ' + err.message);
       setError(err.message || 'Invalid email or password');
       setLoading(false);
     }
