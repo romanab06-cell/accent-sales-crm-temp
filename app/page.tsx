@@ -8,7 +8,8 @@ import {
   Briefcase, 
   Building2,
   User,
-  LogOut
+  LogOut,
+  Shield
 } from 'lucide-react';
 
 export default function Dashboard() {
@@ -24,11 +25,9 @@ export default function Dashboard() {
   useEffect(() => {
     async function loadDashboard() {
       try {
-        // Get current user
         const user = authApi.getCurrentUser();
         setCurrentUser(user);
 
-        // Load all stats in parallel
         const [brandsData, projectsData, clientsData] = await Promise.all([
           brandsApi.getDashboardStats(),
           projectsApi.getAll(),
@@ -71,11 +70,9 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header with Navigation */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            {/* Logo */}
             <div className="flex items-center gap-4">
               <Link href="/" className="flex items-center gap-2">
                 <h1 className="text-xl font-bold text-gray-900">Accent CRM</h1>
@@ -83,7 +80,6 @@ export default function Dashboard() {
               <span className="text-sm text-gray-500 hidden sm:block">Sales & Partner Management</span>
             </div>
 
-            {/* Navigation */}
             <nav className="hidden md:flex items-center gap-1">
               <Link href="/brands" className="px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md">
                 Brands
@@ -105,7 +101,6 @@ export default function Dashboard() {
               </Link>
             </nav>
 
-            {/* User Actions */}
             <div className="flex items-center gap-3">
               {currentUser && (
                 <div className="hidden sm:flex items-center gap-2 text-sm text-gray-600">
@@ -131,14 +126,12 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-900">Dashboard</h2>
           <p className="text-gray-600 mt-1">Welcome back, {currentUser?.name || 'User'}!</p>
         </div>
 
-        {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard
             title="Total Brands"
@@ -166,7 +159,6 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* Quick Actions */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -197,14 +189,19 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Info Box for Admin */}
         {isAdmin && (
           <div className="mt-6 bg-purple-50 border border-purple-200 rounded-lg p-4">
             <h4 className="text-sm font-semibold text-purple-900 mb-2">👑 Admin Features</h4>
-            <p className="text-sm text-purple-700">
-              As an admin, you can see all users' data. Team members will only see their own clients and projects.
-              To add team members, we'll need to create a User Management page.
+            <p className="text-sm text-purple-700 mb-3">
+              As an admin, you can see all users data. Team members will only see their own clients and projects.
             </p>
+            <Link 
+              href="/team"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium"
+            >
+              <Shield className="w-4 h-4" />
+              Manage Team
+            </Link>
           </div>
         )}
       </main>
