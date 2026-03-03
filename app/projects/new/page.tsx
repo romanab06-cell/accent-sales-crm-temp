@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { projectsApi, clientsApi, type Client } from '@/lib/api';
+import { projectsApi, clientsApi, authApi, type Client } from '@/lib/api';
 import Link from 'next/link';
 import { ArrowLeft, Save } from 'lucide-react';
+
 
 const PROJECT_TYPES = [
   { value: 'private_residential', label: 'Private Residential' },
@@ -107,6 +108,7 @@ export default function NewProjectPage() {
     setLoading(true);
 
     try {
+      const currentUser = authApi.getCurrentUser();
       const projectData: any = {
         name: formData.name,
         client_id: formData.client_id || undefined,
@@ -131,6 +133,7 @@ export default function NewProjectPage() {
         description: formData.description || undefined,
         notes: formData.notes || undefined,
         client_requirements: formData.client_requirements || undefined,
+        created_by: currentUser?.id,
       };
 
       const newProject = await projectsApi.create(projectData);

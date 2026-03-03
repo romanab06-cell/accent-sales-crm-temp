@@ -1,18 +1,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { projectsApi, type Project, type ProjectWithRelations } from '@/lib/api';
+import { projectsApi, authApi, type ProjectWithRelations } from '@/lib/api';
 import Link from 'next/link';
 import { 
   Plus, 
   Search, 
   Filter,
   Building2,
-  User,
   Calendar,
-  DollarSign,
   MapPin,
-  ArrowLeft
+  ArrowLeft,
+  Briefcase
 } from 'lucide-react';
 
 const PROJECT_STATUS_COLORS = {
@@ -28,27 +27,14 @@ const PROJECT_STATUS_COLORS = {
   cancelled: 'bg-red-100 text-red-700',
 };
 
-const PROJECT_STATUS_LABELS = {
-  lead: 'Lead',
-  specification: 'Specification',
-  quotation: 'Quotation',
-  negotiation: 'Negotiation',
-  order: 'Order',
-  delivery: 'Delivery',
-  installation: 'Installation',
-  completed: 'Completed',
-  on_hold: 'On Hold',
-  cancelled: 'Cancelled',
-};
-
-const PROJECT_TYPE_LABELS = {
+const PROJECT_TYPE_LABELS: Record<string, string> = {
   private_residential: 'Private Residential',
   hospitality_hotel: 'Hotel',
   hospitality_restaurant: 'Restaurant',
   hospitality_cafe: 'Café',
   hospitality_bar: 'Bar',
-  hospitality_leisure: 'Leisure & Entertainment',
-  hospitality_wellness: 'Wellness & Spa',
+  hospitality_leisure: 'Leisure',
+  hospitality_wellness: 'Wellness',
   retail: 'Retail',
   workspace_office: 'Office',
   workspace_coworking: 'Co-working',
@@ -59,24 +45,27 @@ const PROJECT_TYPE_LABELS = {
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<ProjectWithRelations[]>([]);
   const [filteredProjects, setFilteredProjects] = useState<ProjectWithRelations[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [ownershipFilter, setOwnershipFilter] = useState<'all' | 'mine'>('all');
 
   useEffect(() => {
+    const user = authApi.getCurrentUser();
+    setCurrentUser(user);
     loadProjects();
   }, []);
 
   useEffect(() => {
     filterProjects();
-  }, [projects, searchQuery, statusFilter, typeFilter]);
+  }, [projects, searchQuery, statusFilter, typeFilter, ownershipFilter]);
 
   async function loadProjects() {
     try {
       const data = await projectsApi.getAll();
       setProjects(data);
-      setFilteredProjects(data);
     } catch (error) {
       console.error('Error loading projects:', error);
       alert('Failed to load projects');
@@ -88,6 +77,11 @@ export default function ProjectsPage() {
   function filterProjects() {
     let filtered = [...projects];
 
+    // Ownership filter
+    if (ownershipFilter === 'mine' && currentUser) {
+      filtered = filtered.filter(p => p.created_by === currentUser.id);
+    }
+
     // Search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -95,7 +89,7 @@ export default function ProjectsPage() {
         p.name.toLowerCase().includes(query) ||
         p.city?.toLowerCase().includes(query) ||
         p.country?.toLowerCase().includes(query) ||
-        p.client?.name?.toLowerCase().includes(query)
+        p.client?.name.toLowerCase().includes(query)
       );
     }
 
@@ -113,28 +107,19 @@ export default function ProjectsPage() {
   }
 
   function getStatusCounts() {
-    const counts: Record<string, number> = {
-      all: projects.length,
-      lead: 0,
-      specification: 0,
-      quotation: 0,
-      negotiation: 0,
-      order: 0,
-      delivery: 0,
-      active: 0,
+    const counts = {
+      total: projects.length,
+      active: projects.filter(p => 
+        ['specification', 'quotation', 'negotiation', 'order', 'delivery', 'installation'].includes(p.status)
+      ).length,
+      leads: projects.filter(p => p.status === 'lead').length,
+      quotation: projects.filter(p => p.status === 'quotation').length,
     };
-
-    projects.forEach(p => {
-      counts[p.status] = (counts[p.status] || 0) + 1;
-      if (['specification', 'quotation', 'negotiation', 'order', 'delivery'].includes(p.status)) {
-        counts.active++;
-      }
-    });
-
     return counts;
   }
 
   const statusCounts = getStatusCounts();
+  const myProjectsCount = currentUser ? projects.filter(p => p.created_by === currentUser.id).length : 0;
 
   if (loading) {
     return (
@@ -153,17 +138,17 @@ export default function ProjectsPage() {
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-  <Link href="/" className="text-gray-600 hover:text-gray-900">
-    <ArrowLeft className="w-5 h-5" />
-  </Link>
-  <div>
-    <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
-    <p className="mt-1 text-sm text-gray-500">
-      Manage your design projects and track progress
-    </p>
-  </div>
-</div>
+            <div className="flex items-center gap-4">
+              <Link href="/" className="text-gray-600 hover:text-gray-900">
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
+                <p className="mt-1 text-sm text-gray-500">
+                  Manage your design projects and track progress
+                </p>
+              </div>
+            </div>
             <Link
               href="/projects/new"
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center gap-2"
@@ -182,7 +167,7 @@ export default function ProjectsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Total Projects</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{projects.length}</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{statusCounts.total}</p>
               </div>
               <Building2 className="w-10 h-10 text-blue-600" />
             </div>
@@ -202,20 +187,60 @@ export default function ProjectsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">New Leads</p>
-                <p className="text-2xl font-bold text-purple-600 mt-1">{statusCounts.lead || 0}</p>
+                <p className="text-2xl font-bold text-purple-600 mt-1">{statusCounts.leads}</p>
               </div>
-              <User className="w-10 h-10 text-purple-600" />
+              <div className="w-10 h-10 text-purple-600 flex items-center justify-center text-2xl">👤</div>
             </div>
           </div>
 
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">In Quotation</p>
-                <p className="text-2xl font-bold text-yellow-600 mt-1">{statusCounts.quotation || 0}</p>
+                <p className="text-sm text-gray-600">My Projects</p>
+                <p className="text-2xl font-bold text-yellow-600 mt-1">{myProjectsCount}</p>
               </div>
-              <div className="w-10 h-10 text-yellow-600 flex items-center justify-center text-2xl font-bold">€</div>
+              <Briefcase className="w-10 h-10 text-yellow-600" />
             </div>
+          </div>
+        </div>
+
+        {/* Ownership Filter Toggle */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Filter className="w-5 h-5 text-blue-600" />
+              <span className="text-sm font-medium text-blue-900">View:</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setOwnershipFilter('all')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    ownershipFilter === 'all'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-blue-600 hover:bg-blue-100'
+                  }`}
+                >
+                  All Projects ({projects.length})
+                </button>
+                <button
+                  onClick={() => setOwnershipFilter('mine')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    ownershipFilter === 'mine'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-blue-600 hover:bg-blue-100'
+                  }`}
+                >
+                  My Projects ({myProjectsCount})
+                </button>
+              </div>
+            </div>
+            {currentUser && (
+              <div className="text-sm text-blue-700">
+                Logged in as: <span className="font-medium">{currentUser.name}</span>
+                {currentUser.role === 'admin' && (
+                  <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs">Admin</span>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -253,6 +278,8 @@ export default function ProjectsPage() {
                   <option value="delivery">Delivery</option>
                   <option value="installation">Installation</option>
                   <option value="completed">Completed</option>
+                  <option value="on_hold">On Hold</option>
+                  <option value="cancelled">Cancelled</option>
                 </select>
               </div>
 
@@ -264,12 +291,9 @@ export default function ProjectsPage() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="all">All Types</option>
-                  <option value="private_residential">Private Residential</option>
-                  <option value="hospitality_hotel">Hotel</option>
-                  <option value="hospitality_restaurant">Restaurant</option>
-                  <option value="retail">Retail</option>
-                  <option value="workspace_office">Office</option>
-                  <option value="public_spaces">Public Spaces</option>
+                  {Object.entries(PROJECT_TYPE_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -313,28 +337,23 @@ export default function ProjectsPage() {
                         <Link href={`/projects/${project.id}`} className="text-blue-600 hover:text-blue-800 font-medium">
                           {project.name}
                         </Link>
-                        {project.project_manager && (
-                          <p className="text-xs text-gray-500 mt-1">PM: {project.project_manager}</p>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        {project.client ? (
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">{project.client.name}</p>
-                            <p className="text-xs text-gray-500">{project.client.type}</p>
-                          </div>
-                        ) : (
-                          <span className="text-sm text-gray-400">No client</span>
-                        )}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900">
-                        {PROJECT_TYPE_LABELS[project.project_type as keyof typeof PROJECT_TYPE_LABELS]}
+                        {project.client?.name || '-'}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {PROJECT_TYPE_LABELS[project.project_type] || project.project_type}
                       </td>
                       <td className="px-6 py-4">
                         {project.city && project.country ? (
                           <div className="flex items-center gap-1 text-sm text-gray-900">
                             <MapPin className="w-4 h-4 text-gray-400" />
                             <span>{project.city}, {project.country}</span>
+                          </div>
+                        ) : project.country ? (
+                          <div className="flex items-center gap-1 text-sm text-gray-900">
+                            <MapPin className="w-4 h-4 text-gray-400" />
+                            <span>{project.country}</span>
                           </div>
                         ) : (
                           <span className="text-sm text-gray-400">-</span>
@@ -344,19 +363,15 @@ export default function ProjectsPage() {
                         <span className={`px-2 py-1 text-xs rounded-full font-medium ${
                           PROJECT_STATUS_COLORS[project.status as keyof typeof PROJECT_STATUS_COLORS]
                         }`}>
-                          {PROJECT_STATUS_LABELS[project.status as keyof typeof PROJECT_STATUS_LABELS]}
+                          {project.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900">
-                        {project.project_brands && project.project_brands.length > 0 ? (
-                          <span>{project.project_brands.length} brands</span>
-                        ) : (
-                          <span className="text-gray-400">No brands</span>
-                        )}
+                        {project.project_brands?.length || 0}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900">
                         {project.estimated_value ? (
-                          <span>€{project.estimated_value.toLocaleString()}</span>
+                          `€${project.estimated_value.toLocaleString()}`
                         ) : (
                           <span className="text-gray-400">-</span>
                         )}
@@ -371,11 +386,11 @@ export default function ProjectsPage() {
               <Building2 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No projects found</h3>
               <p className="text-gray-500 mb-6">
-                {searchQuery || statusFilter !== 'all' || typeFilter !== 'all'
+                {searchQuery || statusFilter !== 'all' || typeFilter !== 'all' || ownershipFilter === 'mine'
                   ? 'Try adjusting your filters'
                   : 'Get started by creating your first project'}
               </p>
-              {!searchQuery && statusFilter === 'all' && typeFilter === 'all' && (
+              {!searchQuery && statusFilter === 'all' && typeFilter === 'all' && ownershipFilter === 'all' && (
                 <Link
                   href="/projects/new"
                   className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
@@ -392,6 +407,7 @@ export default function ProjectsPage() {
         {filteredProjects.length > 0 && (
           <div className="mt-4 text-sm text-gray-600 text-center">
             Showing {filteredProjects.length} of {projects.length} projects
+            {ownershipFilter === 'mine' && ' (your projects only)'}
           </div>
         )}
       </main>

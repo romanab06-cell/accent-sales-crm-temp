@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { clientsApi, type Client } from '@/lib/api';
+import { clientsApi, authApi, type Client } from '@/lib/api';
 import Link from 'next/link';
 import { 
   Plus, 
@@ -12,7 +12,8 @@ import {
   Phone,
   MapPin,
   ArrowLeft,
-  Users
+  Users,
+  Filter
 } from 'lucide-react';
 
 const CLIENT_TYPE_LABELS = {
@@ -41,18 +42,22 @@ const RELATIONSHIP_LABELS = {
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [filteredClients, setFilteredClients] = useState<Client[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [relationshipFilter, setRelationshipFilter] = useState<string>('all');
+  const [ownershipFilter, setOwnershipFilter] = useState<'all' | 'mine'>('all');
 
   useEffect(() => {
+    const user = authApi.getCurrentUser();
+    setCurrentUser(user);
     loadClients();
   }, []);
 
   useEffect(() => {
     filterClients();
-  }, [clients, searchQuery, typeFilter, relationshipFilter]);
+  }, [clients, searchQuery, typeFilter, relationshipFilter, ownershipFilter]);
 
   async function loadClients() {
     try {
@@ -69,6 +74,11 @@ export default function ClientsPage() {
 
   function filterClients() {
     let filtered = [...clients];
+
+    // Ownership filter
+    if (ownershipFilter === 'mine' && currentUser) {
+      filtered = filtered.filter(c => c.user_id === currentUser.id);
+    }
 
     // Search filter
     if (searchQuery.trim()) {
@@ -115,6 +125,7 @@ export default function ClientsPage() {
   }
 
   const typeCounts = getTypeCounts();
+  const myClientsCount = currentUser ? clients.filter(c => c.user_id === currentUser.id).length : 0;
 
   if (loading) {
     return (
@@ -191,11 +202,51 @@ export default function ClientsPage() {
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Key Accounts</p>
-                <p className="text-2xl font-bold text-yellow-600 mt-1">{typeCounts.key_account || 0}</p>
+                <p className="text-sm text-gray-600">My Clients</p>
+                <p className="text-2xl font-bold text-yellow-600 mt-1">{myClientsCount}</p>
               </div>
-              <div className="w-10 h-10 text-yellow-600 flex items-center justify-center text-2xl">★</div>
+              <div className="w-10 h-10 text-yellow-600 flex items-center justify-center text-2xl">👤</div>
             </div>
+          </div>
+        </div>
+
+        {/* Ownership Filter Toggle */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Filter className="w-5 h-5 text-blue-600" />
+              <span className="text-sm font-medium text-blue-900">View:</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setOwnershipFilter('all')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    ownershipFilter === 'all'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-blue-600 hover:bg-blue-100'
+                  }`}
+                >
+                  All Clients ({clients.length})
+                </button>
+                <button
+                  onClick={() => setOwnershipFilter('mine')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    ownershipFilter === 'mine'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-blue-600 hover:bg-blue-100'
+                  }`}
+                >
+                  My Clients ({myClientsCount})
+                </button>
+              </div>
+            </div>
+            {currentUser && (
+              <div className="text-sm text-blue-700">
+                Logged in as: <span className="font-medium">{currentUser.name}</span>
+                {currentUser.role === 'admin' && (
+                  <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs">Admin</span>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -355,11 +406,11 @@ export default function ClientsPage() {
               <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No clients found</h3>
               <p className="text-gray-500 mb-6">
-                {searchQuery || typeFilter !== 'all' || relationshipFilter !== 'all'
+                {searchQuery || typeFilter !== 'all' || relationshipFilter !== 'all' || ownershipFilter === 'mine'
                   ? 'Try adjusting your filters'
                   : 'Get started by creating your first client'}
               </p>
-              {!searchQuery && typeFilter === 'all' && relationshipFilter === 'all' && (
+              {!searchQuery && typeFilter === 'all' && relationshipFilter === 'all' && ownershipFilter === 'all' && (
                 <Link
                   href="/clients/new"
                   className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
@@ -376,6 +427,7 @@ export default function ClientsPage() {
         {filteredClients.length > 0 && (
           <div className="mt-4 text-sm text-gray-600 text-center">
             Showing {filteredClients.length} of {clients.length} clients
+            {ownershipFilter === 'mine' && ' (your clients only)'}
           </div>
         )}
       </main>
