@@ -163,6 +163,7 @@ export interface Client {
   notes?: string;
   relationship_strength: RelationshipStrength;
   projects_completed: number;
+  user_id?: string;
   total_value_delivered?: number;
   created_at: string;
   updated_at: string;
