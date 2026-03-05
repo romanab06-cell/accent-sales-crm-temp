@@ -1,5 +1,5 @@
 export * from './users-api';
-export type { Brand } from './supabase';
+export type { Brand, Client } from './supabase';
 import { supabase, Brand, Contact, Deal, Communication, Document, Task, BrandWithRelations } from './supabase';
 export * from './projects-api';
 // ============================================
