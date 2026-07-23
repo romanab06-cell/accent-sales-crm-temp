@@ -38,7 +38,7 @@ export default function LoginPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
             <Lock className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Accent CRM</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Baude</h1>
           <p className="text-gray-600">Sales & Partner Management</p>
         </div>
 
@@ -111,7 +111,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <p className="text-center text-sm text-gray-500 mt-6">
-          Accent Sales & Partner Management System
+          Baude System
         </p>
       </div>
     </div>

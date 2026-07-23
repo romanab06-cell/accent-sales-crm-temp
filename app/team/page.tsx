@@ -291,7 +291,7 @@ function AddUserModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    password: 'Accent2026!',
+    password: 'Baude2026!',
     role: 'user' as 'admin' | 'user',
   });
 
@@ -379,7 +379,7 @@ function AddUserModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
               name="password"
               value={formData.password}
               onChange={handleChange}
-              placeholder="Accent2026!"
+              placeholder="Baude2026!"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
             />

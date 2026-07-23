@@ -5,7 +5,7 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Accent CRM - Sales & Partner Management',
+  title: 'Baude - Sales & Partner Management',
   description: 'Streamline your sales operations and partner relationships',
 };
 

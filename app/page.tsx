@@ -75,7 +75,7 @@ export default function Dashboard() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-4">
               <Link href="/" className="flex items-center gap-2">
-                <h1 className="text-xl font-bold text-gray-900">Accent CRM</h1>
+                <h1 className="text-xl font-bold text-gray-900">Baude</h1>
               </Link>
               <span className="text-sm text-gray-500 hidden sm:block">Sales & Partner Management</span>
             </div>
