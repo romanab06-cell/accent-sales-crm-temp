@@ -371,7 +371,6 @@ export default function ClientsPage() {
         />
       )}
     </div>
-  </div>
   );
 }
 
@@ -476,7 +475,6 @@ function ImportModal({ onClose, onSuccess, currentUser }: { onClose: () => void;
       try {
         await clientsApi.create({
           ...client,
-          user_id: currentUser?.id,
           projects_completed: 0,
           relationship_strength: client.relationship_strength as any,
           type: client.type as any,
