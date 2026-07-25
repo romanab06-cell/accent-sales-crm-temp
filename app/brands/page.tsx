@@ -441,6 +441,297 @@ export default function BrandsPage() {
           </div>
         )}
       </main>
+      {showImportModal && (
+        <BrandImportModal
+          onClose={() => setShowImportModal(false)}
+          onSuccess={() => { setShowImportModal(false); loadBrands(); }}
+          existingBrands={brands}
+        />
+      )}
+    </div>
+  );
+}
+
+function BrandImportModal({ onClose, onSuccess, existingBrands }: {
+  onClose: () => void;
+  onSuccess: () => void;
+  existingBrands: Brand[];
+}) {
+  const [file, setFile] = useState<File | null>(null);
+  const [parsedData, setParsedData] = useState<any[]>([]);
+  const [duplicates, setDuplicates] = useState<string[]>([]);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{
+    success: number;
+    skipped: number;
+    failed: number;
+    errors: string[];
+  } | null>(null);
+  const [step, setStep] = useState<'upload' | 'preview' | 'complete'>('upload');
+
+  function downloadTemplate() {
+    const csv = [
+      'Name,Website,Country,Status,Deal Stage,Priority,Sales Owner,Comments',
+      'Flos,https://flos.com,Italy,prospect,lead,2,Roman,Lighting brand',
+      'Minotti,https://minotti.com,Italy,prospect,lead,1,,Furniture brand',
+    ].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'brands-template.csv';
+    a.click();
+  }
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setFile(f);
+    const ext = f.name.split('.').pop()?.toLowerCase();
+    let rows: any[] = [];
+
+    if (ext === 'csv') {
+      const text = await f.text();
+      const lines = text.split('\n').filter(l => l.trim());
+      if (lines.length < 2) { alert('No data rows found'); return; }
+      const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/['"]/g, ''));
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map(v => v.trim().replace(/['"]/g, ''));
+        const row: any = {};
+        headers.forEach((h, idx) => { row[h] = values[idx] || ''; });
+        if (row.name) rows.push(row);
+      }
+    } else if (ext === 'xlsx' || ext === 'xls') {
+      const XLSX = await import('xlsx');
+      const buf = await f.arrayBuffer();
+      const wb = XLSX.read(buf);
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      rows = (XLSX.utils.sheet_to_json(ws) as any[]).filter((r: any) => r.Name || r.name);
+    } else {
+      alert('Please upload a CSV or Excel file');
+      return;
+    }
+
+    const normalized = rows.map(r => ({
+      name: r.Name || r.name || '',
+      website: r.Website || r.website || '',
+      country: r.Country || r.country || '',
+      status: (r.Status || r.status || 'prospect').toLowerCase(),
+      deal_stage: (r['Deal Stage'] || r.deal_stage || 'lead').toLowerCase().replace(' ', '_'),
+      priority: parseInt(r.Priority || r.priority || '2') || 2,
+      sales_owner: r['Sales Owner'] || r.sales_owner || '',
+      comments: r.Comments || r.comments || '',
+      hide: false,
+      date_added: new Date().toISOString().split('T')[0],
+    }));
+
+    const existingNames = existingBrands.map(b => b.name.toLowerCase().trim());
+    const dups = normalized
+      .filter(r => existingNames.includes(r.name.toLowerCase().trim()))
+      .map(r => r.name);
+
+    setParsedData(normalized);
+    setDuplicates(dups);
+    setStep('preview');
+  }
+
+  async function handleImport() {
+    setImporting(true);
+    const result = { success: 0, skipped: 0, failed: 0, errors: [] as string[] };
+    const dupNames = new Set(duplicates.map(d => d.toLowerCase().trim()));
+
+    for (const brand of parsedData) {
+      if (dupNames.has(brand.name.toLowerCase().trim())) {
+        result.skipped++;
+        continue;
+      }
+      try {
+        const { supabase } = await import('@/lib/supabase');
+        const { error } = await supabase.from('brands').insert(brand);
+        if (error) throw error;
+        result.success++;
+      } catch (err: any) {
+        result.failed++;
+        result.errors.push(brand.name + ': ' + (err.message || 'Failed'));
+      }
+    }
+
+    setImportResult(result);
+    setImporting(false);
+    setStep('complete');
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b">
+          <h2 className="text-xl font-bold text-gray-900">Import Brands</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+        <div className="p-6">
+          {step === 'upload' && (
+            <div className="space-y-6">
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                <FileSpreadsheet className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600 mb-4">Upload a CSV or Excel file</p>
+                <input
+                  type="file"
+                  accept=".csv,.xlsx,.xls"
+                  onChange={handleFileChange}
+                  className="hidden"
+                  id="brand-file-upload"
+                />
+                <label
+                  htmlFor="brand-file-upload"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer"
+                >
+                  <Upload className="w-5 h-5" />
+                  Choose File
+                </label>
+              </div>
+              <div className="bg-blue-50 rounded-lg p-4">
+                <p className="text-sm font-medium text-blue-900 mb-1">Required columns:</p>
+                <p className="text-sm text-blue-700">
+                  Name (required), Website, Country, Status, Deal Stage, Priority, Sales Owner, Comments
+                </p>
+                <p className="text-sm text-blue-700 mt-1">
+                  Status options: prospect, negotiation, contract, active, inactive
+                </p>
+                <p className="text-sm text-blue-700">
+                  Deal Stage options: lead, qualified, proposal, negotiation, won, lost
+                </p>
+                <button
+                  onClick={downloadTemplate}
+                  className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                >
+                  <Download className="w-4 h-4" />
+                  Download Template
+                </button>
+              </div>
+            </div>
+          )}
+
+          {step === 'preview' && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                  <p className="text-sm text-green-600">New Brands</p>
+                  <p className="text-3xl font-bold text-green-700">{parsedData.length - duplicates.length}</p>
+                </div>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+                  <p className="text-sm text-yellow-600">Duplicates (skip)</p>
+                  <p className="text-3xl font-bold text-yellow-700">{duplicates.length}</p>
+                </div>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+                  <p className="text-sm text-blue-600">Total Rows</p>
+                  <p className="text-3xl font-bold text-blue-700">{parsedData.length}</p>
+                </div>
+              </div>
+
+              {duplicates.length > 0 && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  <p className="text-sm font-medium text-yellow-900 mb-1">
+                    Already in CRM (will be skipped):
+                  </p>
+                  <p className="text-sm text-yellow-700">{duplicates.join(', ')}</p>
+                </div>
+              )}
+
+              <div className="border rounded-lg overflow-hidden max-h-48 overflow-y-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50 sticky top-0">
+                    <tr>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Status</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Name</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Country</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Stage</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {parsedData.map((b, i) => {
+                      const isDup = duplicates.map(d => d.toLowerCase()).includes(b.name.toLowerCase());
+                      return (
+                        <tr key={i} className={isDup ? 'bg-yellow-50' : ''}>
+                          <td className="px-3 py-2">
+                            {isDup ? (
+                              <span className="text-xs text-yellow-600 font-medium">Skip</span>
+                            ) : (
+                              <CheckCircle className="w-4 h-4 text-green-600" />
+                            )}
+                          </td>
+                          <td className="px-3 py-2 text-sm font-medium text-gray-900">{b.name}</td>
+                          <td className="px-3 py-2 text-sm text-gray-600">{b.country || '-'}</td>
+                          <td className="px-3 py-2 text-sm text-gray-600">{b.deal_stage}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => { setStep('upload'); setParsedData([]); setDuplicates([]); setFile(null); }}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={handleImport}
+                  disabled={importing || parsedData.length === duplicates.length}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {importing ? 'Importing...' : 'Import ' + (parsedData.length - duplicates.length) + ' Brands'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {step === 'complete' && importResult && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                  <CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-1" />
+                  <p className="text-sm text-green-600">Imported</p>
+                  <p className="text-3xl font-bold text-green-700">{importResult.success}</p>
+                </div>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+                  <p className="text-sm text-yellow-600">Skipped</p>
+                  <p className="text-3xl font-bold text-yellow-700">{importResult.skipped}</p>
+                </div>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                  <XCircle className="w-8 h-8 text-red-600 mx-auto mb-1" />
+                  <p className="text-sm text-red-600">Failed</p>
+                  <p className="text-3xl font-bold text-red-700">{importResult.failed}</p>
+                </div>
+              </div>
+              {importResult.errors.length > 0 && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <ul className="text-sm text-red-700 space-y-1">
+                    {importResult.errors.map((e, i) => <li key={i}>• {e}</li>)}
+                  </ul>
+                </div>
+              )}
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => { setStep('upload'); setParsedData([]); setDuplicates([]); setFile(null); setImportResult(null); }}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  Import More
+                </button>
+                <button
+                  onClick={onSuccess}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
