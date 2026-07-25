@@ -31,6 +31,22 @@ export default function BrandsPage() {
     applyFilters();
   }, [filters, brands]);
 
+  async function exportToExcel() {
+    const XLSX = await import("xlsx");
+    const data = filteredBrands.map(b => ({
+      Name: b.name,
+      Status: b.status,
+      "Deal Stage": b.deal_stage,
+      Country: b.country || "",
+      "Sales Owner": b.sales_owner || "",
+      Website: b.website || "",
+      Comments: b.comments || "",
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Brands");
+    XLSX.writeFile(wb, "brands.xlsx");
+  }
   async function loadBrands() {
     try {
       setLoading(true);
@@ -165,6 +181,7 @@ export default function BrandsPage() {
                   </span>
                 )}
               </button>
+<button onClick={exportToExcel} className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700">Export Excel</button>
               <Link href="/brands/new" className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
                 + New Brand
               </Link>
