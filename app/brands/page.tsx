@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { brandsApi } from '@/lib/api';
 import { Brand } from '@/lib/supabase';
 import Link from 'next/link';
-import { Search, Filter, Building2, ArrowLeft, X } from 'lucide-react';
+import { Search, Filter, Building2, ArrowLeft, X, Upload, Download, CheckCircle, XCircle, FileSpreadsheet } from 'lucide-react';
 
 export default function BrandsPage() {
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -22,6 +22,7 @@ export default function BrandsPage() {
     has_dealer_access: '',
   });
   const [showFilters, setShowFilters] = useState(true);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   useEffect(() => {
     loadBrands();
@@ -181,7 +182,8 @@ export default function BrandsPage() {
                   </span>
                 )}
               </button>
-<button onClick={exportToExcel} className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700">Export Excel</button>
+<button onClick={() => setShowImportModal(true)} className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700">Import</button>
+              <button onClick={exportToExcel} className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700">Export Excel</button>
               <Link href="/brands/new" className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
                 + New Brand
               </Link>
