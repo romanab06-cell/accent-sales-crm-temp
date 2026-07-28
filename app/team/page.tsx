@@ -304,8 +304,8 @@ function AddUserModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
     e.preventDefault();
 
     // Validate email domain
-    if (!formData.email.endsWith('@baudeapp.com')) {
-      alert('Only @baudeapp.com email addresses are allowed');
+    if (!formData.email.endsWith('@accent.design and @baudeapp.com')) {
+      alert('Only @accent.design and @baudeapp.comemail addresses are allowed');
       return;
     }
 
